@@ -1,42 +1,42 @@
-name: Run Postman Collection
+# This workflow will help you to run postman collection using newman and produce an HTML extra test results report
+
+name: Newman Tests
 
 on:
+  workflow_dispatch:
   push:
-    branches:
-      - main
   pull_request:
-    branches:
-      - main
 
 jobs:
-  newman-run:
+  run-postman-tests:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Create Directory
-    - uses: actions/checkout@v3
-    - run: mkdir SampleFolder 
-    
-    # - name: Checkout repository
-    #   uses: actions/checkout@v2
+      # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
 
-    - name: Install Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: '10.x'
+      # Install node on the runner
+      - name: Install node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 14
 
-    - name: Install Newman and htmlextra
-      run:
-        npm install -g newman
-    - name: Install htmlextra
-      run:
-        npm install -g newman-reporter-htmlextra
+      # Install the newman command-line utility, also install the html extra reporter
+      - name: Install newman
+        run: |
+          npm install -g newman
+          npm install -g newman-reporter-htmlextra
 
-    - name: Run Postman Collection with htmlextra reporter
-      run: newman run RestFullBooker.postman_collection.json -r htmlextra --reporter-htmlextra-export SampleFolder/report.html
+      # Make directory to upload the test results
+      - name: Make directory for uploading the test results
+        run: mkdir -p test_results
 
-    - name: Upload report
-      uses: actions/upload-artifact@v3
-      with:
-        name: postman-report
-        path: SampleFolder/report.html
+      # Run the postman collection
+      - name: Run API Tests
+        run: newman run "RestFullBooker.postman_collection.json" -e Production.postman_environment.json -r htmlextra --reporter-htmlextra-export test_results/test_report.html
+
+      # Upload the contents of test results directory to workspace
+      - name: Output the run details
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-run-reports
+          path: test_results
